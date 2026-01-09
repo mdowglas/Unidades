@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Cartão Empresário - SESC</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: #f8fafb;
+            color: #1a3a3e;
+            padding: 24px 16px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* ===== HEADER ===== */
+        header {
+            background: linear-gradient(135deg, #1b5e7f 0%, #2a7a9b 100%);
+            padding: 40px 32px;
+            border-radius: 12px;
+            margin-bottom: 32px;
+            color: white;
+            box-shadow: 0 4px 16px rgba(27, 94, 127, 0.12);
+        }
+
+        header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            font-size: 1rem;
+            opacity: 0.95;
+            font-weight: 400;
+        }
+
+        /* ===== KPI CARDS ===== */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .kpi {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border-left: 4px solid #1b5e7f;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .kpi:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(27, 94, 127, 0.1);
+        }
+
+        .kpi-label {
+            font-size: 0.8rem;
+            color: #7a8d98;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1b5e7f;
+            margin-bottom: 4px;
+        }
+
+        .kpi-detail {
+            font-size: 0.85rem;
+            color: #a0adb7;
+            font-weight: 500;
+        }
+
+        /* ===== TOP 3 SECTION ===== */
+        .top3-section {
+            background: white;
+            border-radius: 10px;
+            padding: 28px;
+            margin-bottom: 32px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .top3-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #1b5e7f;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .top3-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .top3-card {
+            position: relative;
+            padding: 24px;
+            border-radius: 10px;
+            color: white;
+            overflow: hidden;
+        }
+
+        .top3-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+        }
+
+        .top3-card.rank1 {
+            background: linear-gradient(135deg, #d4a564 0%, #c99139 100%);
+            box-shadow: 0 8px 24px rgba(212, 165, 100, 0.2);
+        }
+
+        .top3-card.rank2 {
+            background: linear-gradient(135deg, #a0a0a0 0%, #808080 100%);
+            box-shadow: 0 8px 24px rgba(160, 160, 160, 0.2);
+        }
+
+        .top3-card.rank3 {
+            background: linear-gradient(135deg, #b8860b 0%, #996633 100%);
+            box-shadow: 0 8px 24px rgba(184, 134, 11, 0.2);
+        }
+
+        .rank-number {
+            font-size: 3.5rem;
+            font-weight: 800;
+            opacity: 0.15;
+            position: absolute;
+            top: 0;
+            right: 16px;
+            z-index: 1;
+        }
+
+        .rank-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .rank-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.25);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            backdrop-filter: blur(8px);
+        }
+
+        .rank-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .rank-unit {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 12px;
+        }
+
+        .rank-stat {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-top: 8px;
+        }
+
+        /* ===== CHARTS GRID ===== */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .chart-box {
+            background: white;
+            padding: 24px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .chart-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1b5e7f;
+            margin-bottom: 20px;
+        }
+
+        .chart-box.full-width {
+            grid-column: 1 / -1;
+        }
+
+        /* ===== FILTER SECTION ===== */
+        .filter-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .filter-label {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #1b5e7f;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .filter-select {
+            width: 100%;
+            max-width: 300px;
+            padding: 10px 14px;
+            border: 2px solid #e0e6ec;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            color: #1b5e7f;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+            font-weight: 500;
+        }
+
+        .filter-select:hover {
+            border-color: #1b5e7f;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: #1b5e7f;
+            box-shadow: 0 0 0 3px rgba(27, 94, 127, 0.1);
+        }
+
+        /* ===== UNITS SECTION ===== */
+        .units-container {
+            display: grid;
+            gap: 20px;
+        }
+
+        .unit-card {
+            background: white;
+            border-radius: 10px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .unit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .unit-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #1b5e7f;
+        }
+
+        .unit-total {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1b5e7f;
+        }
+
+        .unit-table {
+            width: 100%;
+            border-collapse: collapse;
+            overflow-x: auto;
+            display: block;
+        }
+
+        .unit-table thead {
+            background: #f8fafb;
+            border-bottom: 2px solid #e0e6ec;
+        }
+
+        .unit-table th {
+            padding: 12px;
+            text-align: left;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #7a8d98;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .unit-table td {
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.9rem;
+        }
+
+        .unit-table tbody tr:hover {
+            background: #fafbfc;
+        }
+
+        .operator-name {
+            font-weight: 600;
+            color: #1b5e7f;
+            white-space: nowrap;
+        }
+
+        .month-cell {
+            text-align: center;
+            font-weight: 600;
+            color: #7a8d98;
+            background: #f8fafb;
+            border-radius: 4px;
+            min-width: 35px;
+        }
+
+        .month-cell.active {
+            background: #1b5e7f;
+            color: white;
+        }
+
+        .total-cell {
+            font-weight: 700;
+            color: #1b5e7f;
+            text-align: right;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1024px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .top3-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 28px 20px;
+            }
+
+            header h1 {
+                font-size: 1.5rem;
+            }
+
+            .kpi-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .unit-table {
+                font-size: 0.8rem;
+            }
+
+            .unit-table th,
+            .unit-table td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <header>
+            <h1>Cartão do Empresário</h1>
+            <p>Dashboard de Desempenho de Vendas - SESC Pernambuco</p>
+        </header>
+
+        <!-- KPI CARDS -->
+        <div class="kpi-grid">
+            <div class="kpi">
+                <div class="kpi-label">Total de Vendas</div>
+                <div class="kpi-value" id="kpiTotal">0</div>
+                <div class="kpi-detail">Cartões ativados</div>
+            </div>
+            <div class="kpi">
+                <div class="kpi-label">Unidades</div>
+                <div class="kpi-value" id="kpiUnidades">0</div>
+                <div class="kpi-detail">Centros de operação</div>
+            </div>
+            <div class="kpi">
+                <div class="kpi-label">Operadores</div>
+                <div class="kpi-value" id="kpiOperadores">0</div>
+                <div class="kpi-detail">Profissionais atuantes</div>
+            </div>
+             <div class="kpi">
+                <div class="kpi-label">Taxa de Ativação</div>
+                <div class="kpi-value" id="kpiTaxa">0%</div>
+                <div class="kpi-detail">Média geral</div>
+            </div>
+        </div>
+
+        <!-- TOP 3 RANKING -->
+        <div class="top3-section">
+            <h2 class="top3-title">🏆 Top 3 Unidades Destaque</h2>
+            <div class="top3-grid" id="top3Container"></div>
+        </div>
+
+        <!-- CHARTS -->
+        <div class="charts-grid">
+            <div class="chart-box">
+                <h3 class="chart-title">Evolução Mensal</h3>
+                <canvas id="chartMeses"></canvas>
+            </div>
+            <div class="chart-box">
+                <h3 class="chart-title">Top 10 Unidades</h3>
+                <canvas id="chartTop10"></canvas>
+            </div>
+        </div>
+
+        <!-- FILTER -->
+        <div class="filter-section">
+            <label class="filter-label">Filtrar por Unidade</label>
+            <select class="filter-select" id="filterSelect" onchange="aplicarFiltro()">
+                <option value="">Todas as Unidades</option>
+            </select>
+        </div>
+
+        <!-- UNITS DATA -->
+        <div class="units-container" id="unitsContainer"></div>
+    </div>
+
+    <script>
+        const MESES = ['jan_2026', 'jan_2025', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+        const MESES_LABELS = ['Jan 26', 'Jan 25', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+        const DADOS = {
+                        "ARARIPINA": {
+                "total": 48,
+                "vendas": {"jan_2026": 1, "jan_2025": 7, "fev": 6, "mar": 2, "abr": 1, "mai": 7, "jun": 1, "jul": 2, "ago": 0, "set": 5, "out": 8, "nov": 4, "dez": 4},
+                "operadores": [
+                    {"nome": "JOYCE GOMES DE SENA", "total": 25, "vendas": {"jan_2026": 0, "jan_2025": 4, "fev": 6, "mar": 2, "abr": 1, "mai": 2, "jun": 0, "jul": 0, "ago": 0, "set": 1, "out": 2, "nov": 3, "dez": 4}},
+                    {"nome": "FRANCISCA JACKELINE DA SILVA ARAUJO", "total": 22, "vendas": {"jan_2026": 1, "jan_2025": 3, "fev": 0, "mar": 0, "abr": 0, "mai": 4, "jun": 1, "jul": 2, "ago": 0, "set": 4, "out": 6, "nov": 1, "dez": 0}},
+                    {"nome": "NATALIA DE CARVALHO TEIXEIRA", "total": 1, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 1, "jun": 0, "jul": 0, "ago": 0, "set": 0, "out": 0, "nov": 0, "dez": 0}}
+                ]
+            },
+ "ARCOVERDE": {
+                "total": 10,
+                "vendas": {"jan_2026": 1, "jan_2025": 1, "fev": 0, "mar": 1, "abr": 1, "mai": 0, "jun": 0, "jul": 0, "ago": 1, "set": 0, "out": 1, "nov": 0, "dez": 4},
+                "operadores": [
+                    {"nome": "PAULO ÍTALO TENÓRIO CAVALCANTI", "total": 3, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 0, "jul": 0, "ago": 0, "set": 0, "out": 0, "nov": 0, "dez": 3}},
+                    {"nome": "ROSINEIDE MARIA DA SILVA", "total": 3, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 1, "mai": 0, "jun": 0, "jul": 0, "ago": 1, "set": 0, "out": 1, "nov": 0, "dez": 0}},
+                    {"nome": "MARIA GISLANE DE MELO ANTUNES", "total": 2, "vendas": {"jan_2026": 1, "jan_2025": 1, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 0, "jul": 0, "ago": 0, "set": 0, "out": 0, "nov": 0, "dez": 0}},
+                    {"nome": "ALMIRA MARIA DOS SANTOS", "total": 1, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 0, "jul": 0, "ago": 0, "set": 0, "out": 0, "nov": 0, "dez": 1}},
+                    {"nome": "CARLOS ALBERTO FERREIRA DE OLIVEIRA", "total": 1, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 1, "abr": 0, "mai": 0, "jun": 0, "jul": 0, "ago": 0, "set": 0, "out": 0, "nov": 0, "dez": 0}}
+                ]
+            },
+"BELO JARDIM": {
+                "total": 12,
+                "vendas": {"jan_2026": 0, "jan_2025": 1, "fev": 1, "mar": 1, "abr": 2, "mai": 0, "jun": 1, "jul": 1, "ago": 0, "set": 1, "out": 0, "nov": 0, "dez": 4},
+                "operadores": [
+                    {"nome": "BRUNO ALEXANDRE CORREA DE ARAUJO CHAVES", "total": 11, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 1, "mar": 1, "abr": 2, "mai": 0, "jun": 1, "jul": 1, "ago": 0, "set": 1, "out": 0, "nov": 0, "dez": 4}},
+                    {"nome": "RAFAEL MUNIZ DA SILVA", "total": 1, "vendas": {"jan_2026": 0, "jan_2025": 1, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 0, "jul": 0, "ago": 0, "set": 0, "out": 0, "nov": 0, "dez": 0}},
+                ]
+            },
+"BODOCO": {
+                "total": 17,
+                "vendas": {"jan_2026": 0, "jan_2025": 1, "fev": 0, "mar": 0, "abr": 2, "mai": 1, "jun": 1, "jul": 0, "ago": 0, "set": 4, "out": 3, "nov": 1, "dez": 4},
+                "operadores": [
+                    {"nome": "MARIA DE FATIMA SILVA DO NASCIMENTO", "total": 11, "vendas": {"jan_2026": 0, "jan_2025": 1, "fev": 0, "mar": 0, "abr": 2, "mai": 1, "jun": 1, "jul": 0, "ago": 0, "set": 3, "out": 3, "nov": 1, "dez": 4}},
+                    {"nome": "DEJAMILTON ALVES DE SOUZA", "total": 1, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 0, "jul": 0, "ago": 0, "set": 1, "out": 0, "nov": 0, "dez": 0}},
+                ]
+            },            
+"BUIQUE": {
+                "total": 7,
+                "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 1, "jul": 2, "ago": 1, "set": 2, "out": 0, "nov": 0, "dez": 1},
+                "operadores": [
+                    {"nome": "INGRIDY LUCINARA ANTUNES DE LIMA", "total": 1, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 1, "jul": 2, "ago": 1, "set": 2, "out": 0, "nov": 0, "dez": 1}},
+                ]
+            },            
+"CARUARU": {
+                "total": 28,
+                "vendas": {"jan_2026": 1, "jan_2025": 4, "fev": 5, "mar": 1, "abr": 0, "mai": 3, "jun": 3, "jul": 0, "ago": 4, "set": 2, "out": 0, "nov": 3, "dez": 2},
+                "operadores": [
+                    {"nome": "SHEILA FARIAS NOGUEIRA PAIVA", "total": 13, "vendas": {"jan_2026": 0, "jan_2025": 1, "fev": 4, "mar": 0, "abr": 0, "mai": 2, "jun": 3, "jul": 0, "ago": 0, "set": 1, "out": 0, "nov": 2, "dez": 0}},
+                    {"nome": "VANESSA SAMARA DA SILVA DE ALMEIDA", "total": 5, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 1, "abr": 0, "mai": 1, "jun": 0, "jul": 0, "ago": 1, "set": 0, "out": 0, "nov": 1, "dez": 1}},
+                    {"nome": "IARA MARIA DE ALBUQUERQUE PEREIRA DIAS", "total": 5, "vendas": {"jan_2026": 1, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 0, "jul": 0, "ago": 3, "set": 0, "out": 0, "nov": 0, "dez": 1}},
+                    {"nome": "PAULO DE TARSO ANDRADE RODRIGUES DO O", "total": 1, "vendas": {"jan_2026": 0, "jan_2025": 3, "fev": 1, "mar": 0, "abr": 0, "mai": 0, "jun": 0, "jul": 0, "ago": 0, "set": 1, "out": 0, "nov": 0, "dez": 0}},
+                ]
+            },            
+"CASA AMARELA": {
+                "total": 23,
+                "vendas": {"jan_2026": 0, "jan_2025": 6, "fev": 2, "mar": 1, "abr": 0, "mai": 0, "jun": 2, "jul": 1, "ago": 1, "set": 0, "out": 4, "nov": 3, "dez": 3},
+                "operadores": [
+                    {"nome": "VANESSA FERREIRA DA SILVA", "total": 16, "vendas": {"jan_2026": 0, "jan_2025": 6, "fev": 2, "mar": 1, "abr": 0, "mai": 0, "jun": 1, "jul": 0, "ago": 1, "set": 0, "out": 1, "nov": 2, "dez": 2}},
+                    {"nome": "KLAUBER ADRIANO GUILHERME DANTAS", "total": 4, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 0, "jul": 0, "ago": 0, "set": 0, "out": 2, "nov": 1, "dez": 1}},
+                    {"nome": "ROSEMARY PEREIRA DA SILVA", "total": 3, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 1, "jul": 1, "ago": 0, "set": 0, "out": 1, "nov": 0, "dez": 0}},
+                ]
+            },            
+"ESPAÇO SESC": {
+                "total": 17,
+                "vendas": {"jan_2026": 0, "jan_2025": 1, "fev": 1, "mar": 3, "abr": 2, "mai": 2, "jun": 0, "jul": 1, "ago": 2, "set": 2, "out": 1, "nov": 2, "dez": 0},
+                "operadores": [
+                    {"nome": "MARIA CAROLINA RIBEIRO ESPÍNDOLA", "total": 10, "vendas": {"jan_2026": 0, "jan_2025": 1, "fev": 1, "mar": 1, "abr": 1, "mai": 0, "jun": 0, "jul": 1, "ago": 2, "set": 1, "out": 0, "nov": 2, "dez": 0}},
+                    {"nome": "ANNA KAROLINA BARBOSA DE MOURA", "total": 3, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 1, "jun": 0, "jul": 0, "ago": 0, "set": 1, "out": 1, "nov": 0, "dez": 0}},
+                    {"nome": "JOSÉ ALBERTO CLAUDINO SILVA", "total": 3, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 2, "abr": 0, "mai": 1, "jun": 0, "jul": 0, "ago": 0, "set": 0, "out": 0, "nov": 0, "dez": 0}},
+                    {"nome": "MIGUEL CARLOS DA SILVA", "total": 1, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 1, "mai": 0, "jun": 0, "jul": 0, "ago": 0, "set": 0, "out": 0, "nov": 0, "dez": 0}},
+                ]
+            },                                                
+"FLORESTA": {
+                "total": 2,
+                "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 0, "jul": 0, "ago": 0, "set": 0, "out": 0, "nov": 1, "dez": 1},
+                "operadores": [
+                    {"nome": "ANALICE NOVAES DE MENEZES ALMEIDA", "total": 1, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 0, "jul": 0, "ago": 0, "set": 0, "out": 0, "nov": 1, "dez": 1}},
+                ]
+            },                                                
+            "GARANHUNS": {
+                "total": 43,
+                "vendas": {"jan_2026": 2, "jan_2025": 10, "fev": 0, "mar": 4, "abr": 0, "mai": 2, "jun": 2, "jul": 3, "ago": 7, "set": 4, "out": 3, "nov": 4, "dez": 2},
+                "operadores": [
+                    {"nome": "MARIA CRISTINA CAVALCANTI DE MORAIS", "total": 27, "vendas": {"jan_2026": 0, "jan_2025": 5, "fev": 0, "mar": 2, "abr": 0, "mai": 2, "jun": 1, "jul": 0, "ago": 6, "set": 3, "out": 3, "nov": 3, "dez": 2}},
+                    {"nome": "DIEGO OLIVEIRA PLACIDO", "total": 9, "vendas": {"jan_2026": 2, "jan_2025": 1, "fev": 0, "mar": 1, "abr": 0, "mai": 0, "jun": 0, "jul": 2, "ago": 1, "set": 1, "out": 0, "nov": 1, "dez": 0}},
+                    {"nome": "THAMIRYS LALESKA RAMOS DA SILVA", "total": 4, "vendas": {"jan_2026": 0, "jan_2025": 4, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 0, "jul": 0, "ago": 0, "set": 0, "out": 0, "nov": 0, "dez": 0}},
+                    {"nome": "EMANUELLA PADILHA RIBEIRO", "total": 3, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 1, "abr": 0, "mai": 0, "jun": 1, "jul": 1, "ago": 0, "set": 0, "out": 0, "nov": 0, "dez": 0}}
+                ]
+            },
+"GOIANA": {
+                "total": 21,
+                "vendas": {"jan_2026": 1, "jan_2025": 4, "fev": 0, "mar": 1, "abr": 2, "mai": 0, "jun": 3, "jul": 1, "ago": 0, "set": 0, "out": 0, "nov": 1, "dez": 8},
+                "operadores": [
+                    {"nome": "GINALDO CARNEIRO DA SILVA", "total": 16, "vendas": {"jan_2026": 1, "jan_2025": 3, "fev": 0, "mar": 1, "abr": 1, "mai": 0, "jun": 1, "jul": 1, "ago": 0, "set": 0, "out": 0, "nov": 1, "dez": 7}},
+                    {"nome": "NORMANDO PEIXÔTO DE ALBUQUERQUE FILHO", "total": 3, "vendas": {"jan_2026": 0, "jan_2025": 1, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 2, "jul": 0, "ago": 0, "set": 0, "out": 0, "nov": 0, "dez": 0}},
+                    {"nome": "HUGO WAGNER DE FRANÇA LIMA", "total": 2, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 1, "mai": 0, "jun": 0, "jul": 0, "ago": 0, "set": 0, "out": 0, "nov": 0, "dez": 1}},
+                ]
+            },                                                
+"GUADALUPE": {
+                "total": 6,
+                "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 1, "jun": 0, "jul": 0, "ago": 4, "set": 1, "out": 0, "nov": 0, "dez": 0},
+                "operadores": [
+                    {"nome": "ALEXANDRE BERNARDES RIBEIRO", "total": 5, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 0, "jul": 0, "ago": 4, "set": 1, "out": 0, "nov": 1, "dez": 1}},
+                    {"nome": "KRYSTIAN LUCAS DA COSTA GONCALVES", "total": 1, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 1, "jun": 0, "jul": 0, "ago": 0, "set": 0, "out": 0, "nov": 1, "dez": 1}},
+                ]
+            },   
+"PETROLINA": {
+                "total": 38,
+                "vendas": {"jan_2026": 2, "jan_2025": 5, "fev": 5, "mar": 1, "abr": 0, "mai": 2, "jun": 4, "jul": 1, "ago": 3, "set": 2, "out": 9, "nov": 3, "dez": 1},
+                "operadores": [
+                    {"nome": "ERASMO BARBOSA PEREIRA", "total": 19, "vendas": {"jan_2026": 1, "jan_2025": 2, "fev": 1, "mar": 1, "abr": 0, "mai": 1, "jun": 1, "jul": 1, "ago": 2, "set": 0, "out": 6, "nov": 2, "dez": 1}},
+                    {"nome": "CLARISSA BARBOSA PEREIRA ALVES", "total": 13, "vendas": {"jan_2026": 1, "jan_2025": 3, "fev": 4, "mar": 0, "abr": 0, "mai": 1, "jun": 1, "jul": 0, "ago": 0, "set": 2, "out": 0, "nov": 1, "dez": 0}},
+                    {"nome": "GILCLESIO AMARANTE DA SILVA", "total": 6, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 2, "jul": 0, "ago": 1, "set": 0, "out": 3, "nov": 0, "dez": 0}},
+                ]
+            },                 
+            "PIEDADE": {
+                "total": 60,
+                "vendas": {"jan_2026": 2, "jan_2025": 11, "fev": 5, "mar": 7, "abr": 0, "mai": 5, "jun": 6, "jul": 9, "ago": 3, "set": 3, "out": 4, "nov": 3, "dez": 2},
+                "operadores": [
+                    {"nome": "CAMILA PERIQUITO DE CASTRO", "total": 20, "vendas": {"jan_2026": 0, "jan_2025": 3, "fev": 5, "mar": 4, "abr": 0, "mai": 1, "jun": 1, "jul": 2, "ago": 0, "set": 1, "out": 2, "nov": 0, "dez": 1}},
+                    {"nome": "LUCAS DE ARAUJO SANTOS", "total": 11, "vendas": {"jan_2026": 1, "jan_2025": 6, "fev": 0, "mar": 0, "abr": 0, "mai": 1, "jun": 1, "jul": 0, "ago": 0, "set": 0, "out": 0, "nov": 1, "dez": 1}},
+                    {"nome": "CRIVISON LUIZ RODRIGUES DA SILVA", "total": 11, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 1, "jun": 4, "jul": 4, "ago": 2, "set": 0, "out": 0, "nov": 0, "dez": 0}},
+                    {"nome": "CAMILA VITORIA AMARAL CARDOSO", "total": 6, "vendas": {"jan_2026": 1, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 2, "jun": 0, "jul": 2, "ago": 0, "set": 1, "out": 0, "nov": 0, "dez": 0}},
+                    {"nome": "CEZAR SANTOS DE CARVALHO", "total": 4, "vendas": {"jan_2026": 0, "jan_2025": 2, "fev": 0, "mar": 2, "abr": 0, "mai": 0, "jun": 0, "jul": 0, "ago": 0, "set": 0, "out": 0, "nov": 0, "dez": 0}},
+                    {"nome": "GUSTAVO MACÊDO PÔRTO FIGUEIREDO BASTOS", "total": 4, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 0, "jul": 1, "ago": 1, "set": 1, "out": 0, "nov": 1, "dez": 0}},
+                    {"nome": "VERINAIDE ROBRTA DA SILVA", "total": 1, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 0, "jul": 0, "ago": 0, "set": 0, "out": 1, "nov": 0, "dez": 0}},
+                    {"nome": "CELSO ARAGAO DA SILVA JUNIOR", "total": 1, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 1, "abr": 0, "mai": 0, "jun": 0, "jul": 0, "ago": 0, "set": 0, "out": 0, "nov": 0, "dez": 0}},
+                    {"nome": "GEOVANA WILMA DA SILVA", "total": 1, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 0, "jul": 0, "ago": 0, "set": 0, "out": 1, "nov": 0, "dez": 0}},
+                    {"nome": "KARINA FREITAS DA ROCHA", "total": 1, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 0, "jul": 0, "ago": 0, "set": 0, "out": 0, "nov": 1, "dez": 0}}
+                ]
+            },
+"RIOMAR": {
+                "total": 13,
+                "vendas": {"jan_2026": 1, "jan_2025": 6, "fev": 0, "mar": 1, "abr": 1, "mai": 0, "jun": 1, "jul": 1, "ago": 0, "set": 1, "out": 0, "nov": 1, "dez": 0},
+                "operadores": [
+                    {"nome": "FERNANDO LEMOS DE VASCONCELOS", "total": 7, "vendas": {"jan_2026": 0, "jan_2025": 3, "fev": 0, "mar": 1, "abr": 1, "mai": 0, "jun": 1, "jul": 1, "ago": 0, "set": 0, "out": 0, "nov": 0, "dez": 1}},
+                    {"nome": "BIANCA ELEN SILVA GALDINO", "total": 6, "vendas": {"jan_2026": 1, "jan_2025": 3, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 0, "jul": 0, "ago": 0, "set": 1, "out": 0, "nov": 1, "dez": 1}},
+                ]
+            },     
+"SANTA RITA": {
+                "total": 42,
+                "vendas": {"jan_2026": 2, "jan_2025": 10, "fev": 4, "mar": 1, "abr": 4, "mai": 3, "jun": 6, "jul": 2, "ago": 1, "set": 2, "out": 1, "nov": 5, "dez": 1},
+                "operadores": [
+                    {"nome": "JOSÉ SEVERINO DE FARIAS FILHO", "total": 20, "vendas": {"jan_2026": 2, "jan_2025": 3, "fev": 3, "mar": 1, "abr": 1, "mai": 2, "jun": 5, "jul": 1, "ago": 0, "set": 0, "out": 0, "nov": 2, "dez": 0}},
+                    {"nome": "GABRIELA CRUZ DA SILVA", "total": 13, "vendas": {"jan_2026": 0, "jan_2025": 5, "fev": 1, "mar": 0, "abr": 1, "mai": 1, "jun": 1, "jul": 0, "ago": 0, "set": 1, "out": 1, "nov": 2, "dez": 0}},
+                    {"nome": "JOZIMAR PAIVA CORDEIRO NETO", "total": 7, "vendas": {"jan_2026": 0, "jan_2025": 2, "fev": 0, "mar": 0, "abr": 2, "mai": 0, "jun": 0, "jul": 1, "ago": 1, "set": 1, "out": 0, "nov": 0, "dez": 0}},
+                    {"nome": "ROSIANE CRISTINA DOS SANTOS", "total": 2, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 0, "jul": 0, "ago": 0, "set": 0, "out": 0, "nov": 1, "dez": 1}},
+                ]
+            },                                                         
+"SANTO AMARO": {
+                "total": 30,
+                "vendas": {"jan_2026": 1, "jan_2025": 5, "fev": 3, "mar": 3, "abr": 6, "mai": 0, "jun": 0, "jul": 2, "ago": 3, "set": 1, "out": 3, "nov": 2, "dez": 1},
+                "operadores": [
+                    {"nome": "TEREZA CRISTINA DO PASSO DE PAULA", "total": 17, "vendas": {"jan_2026": 1, "jan_2025": 3, "fev": 1, "mar": 2, "abr": 4, "mai": 0, "jun": 0, "jul": 0, "ago": 2, "set": 0, "out": 2, "nov": 1, "dez": 1}},
+                    {"nome": "VANIA LUCIA ALVES FEITOSA", "total": 10, "vendas": {"jan_2026": 0, "jan_2025": 1, "fev": 2, "mar": 1, "abr": 2, "mai": 0, "jun": 0, "jul": 0, "ago": 1, "set": 1, "out": 1, "nov": 1, "dez": 0}},
+                    {"nome": "VANYA ROSETE DA SILVA OLIVEIRA", "total": 2, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 0, "jul": 2, "ago": 0, "set": 0, "out": 0, "nov": 0, "dez": 0}},
+                    {"nome": "JANICE NASCIMENTO DE ARAUJO SILVA", "total": 1, "vendas": {"jan_2026": 0, "jan_2025": 1, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 0, "jul": 0, "ago": 0, "set": 0, "out": 0, "nov": 0, "dez": 0}},
+                ]
+            },  
+"SAO LOURENÇO": {
+                "total": 5,
+                "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 1, "mar": 0, "abr": 0, "mai": 2, "jun": 0, "jul": 0, "ago": 0, "set": 1, "out": 1, "nov": 0, "dez": 0},
+                "operadores": [
+                    {"nome": "ÍCARO GABRIEL CABRAL IZAIAS MAGALHÃES", "total": 5, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 1, "mar": 0, "abr": 0, "mai": 0, "jun": 0, "jul": 0, "ago": 0, "set": 1, "out": 1, "nov": 0, "dez": 0}},
+                ]
+            },  
+"SERRA TALHADA": {
+                "total": 18,
+                "vendas": {"jan_2026": 0, "jan_2025": 4, "fev": 3, "mar": 0, "abr": 0, "mai": 0, "jun": 2, "jul": 2, "ago": 4, "set": 0, "out": 0, "nov": 1, "dez": 2},
+                "operadores": [
+                    {"nome": "ANNA GABRIELLA DE SOUZA PEREIRA", "total": 14, "vendas": {"jan_2026": 0, "jan_2025": 3, "fev": 2, "mar": 0, "abr": 0, "mai": 0, "jun": 1, "jul": 2, "ago": 3, "set": 0, "out": 0, "nov": 1, "dez": 2}},
+                    {"nome": "AMANDA LECIA DE LIMA SILVA", "total": 4, "vendas": {"jan_2026": 0, "jan_2025": 1, "fev": 1, "mar": 0, "abr": 0, "mai": 0, "jun": 1, "jul": 0, "ago": 1, "set": 0, "out": 0, "nov": 0, "dez": 0}},
+                ]
+            },  
+"SURUBIM": {
+                "total": 8,
+                "vendas": {"jan_2026": 0, "jan_2025": 2, "fev": 2, "mar": 0, "abr": 0, "mai": 0, "jun": 1, "jul": 0, "ago": 0, "set": 0, "out": 1, "nov": 1, "dez": 1},
+                "operadores": [
+                    {"nome": "WESLY CARDIA VIRGINIA OLIVEIRA DA SILVA", "total": 8, "vendas": {"jan_2026": 0, "jan_2025": 2, "fev": 2, "mar": 0, "abr": 0, "mai": 0, "jun": 1, "jul": 0, "ago": 0, "set": 0, "out": 1, "nov": 1, "dez": 1}},
+                ]
+            },  
+"TRIUNFO": {
+                "total": 40,
+                "vendas": {"jan_2026": 1, "jan_2025": 2, "fev": 1, "mar": 2, "abr": 1, "mai": 4, "jun": 2, "jul": 11, "ago": 0, "set": 7, "out": 2, "nov": 2, "dez": 5},
+                "operadores": [
+                    {"nome": "MIGUEL CARLOS DA SILVA", "total": 40, "vendas": {"jan_2026": 1, "jan_2025": 2, "fev": 1, "mar": 2, "abr": 1, "mai": 4, "jun": 2, "jul": 11, "ago": 0, "set": 7, "out": 2, "nov": 2, "dez": 5}},
+                ]
+            },  
+            "URN": {
+                "total": 192,
+                "vendas": {"jan_2026": 0, "jan_2025": 28, "fev": 28, "mar": 9, "abr": 32, "mai": 8, "jun": 13, "jul": 24, "ago": 19, "set": 8, "out": 14, "nov": 4, "dez": 5},
+                "operadores": [
+                    {"nome": "MARIO DOWGLAS DA SILVA MENDONCA", "total": 93, "vendas": {"jan_2026": 0, "jan_2025": 21, "fev": 13, "mar": 1, "abr": 20, "mai": 1, "jun": 6, "jul": 11, "ago": 7, "set": 2, "out": 6, "nov": 2, "dez": 3}},
+                    {"nome": "BRENO ANTONIO ALEXANDRINO DA SILVA", "total": 63, "vendas": {"jan_2026": 0, "jan_2025": 5, "fev": 9, "mar": 6, "abr": 8, "mai": 6, "jun": 4, "jul": 9, "ago": 8, "set": 2, "out": 5, "nov": 1, "dez": 0}},
+                    {"nome": "PAULA ROBERTA ALVES LIMA", "total": 16, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 2, "mar": 0, "abr": 3, "mai": 0, "jun": 3, "jul": 3, "ago": 1, "set": 1, "out": 1, "nov": 0, "dez": 2}},
+                    {"nome": "ANA CLAUDIA RAMOS DE SOUZA", "total": 9, "vendas": {"jan_2026": 0, "jan_2025": 2, "fev": 3, "mar": 0, "abr": 0, "mai": 1, "jun": 0, "jul": 0, "ago": 0, "set": 1, "out": 1, "nov": 1, "dez": 0}},
+                    {"nome": "EDVANE MARIA DA SILVA", "total": 6, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 1, "mar": 2, "abr": 0, "mai": 0, "jun": 0, "jul": 1, "ago": 1, "set": 1, "out": 0, "nov": 0, "dez": 0}},
+                    {"nome": "MARIA LUCIANA DA SILVA", "total": 4, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 1, "mai": 0, "jun": 0, "jul": 0, "ago": 2, "set": 0, "out": 1, "nov": 0, "dez": 0}},
+                    {"nome": "ANSELMO SILVA DE OLIVEIRA", "total": 1, "vendas": {"jan_2026": 0, "jan_2025": 0, "fev": 0, "mar": 0, "abr": 0, "mai": 0, "jun": 0, "jul": 0, "ago": 0, "set": 1, "out": 0, "nov": 0, "dez": 0}}
+                ]
+            },
+            "TRIUNFO": {
+                "total": 40,
+                "vendas": {"jan_2026": 1, "jan_2025": 2, "fev": 1, "mar": 2, "abr": 1, "mai": 4, "jun": 2, "jul": 11, "ago": 0, "set": 7, "out": 2, "nov": 2, "dez": 5},
+                "operadores": [
+                    {"nome": "MARGARIDA MOREIRA DA SILVA", "total": 40, "vendas": {"jan_2026": 1, "jan_2025": 2, "fev": 1, "mar": 2, "abr": 1, "mai": 4, "jun": 2, "jul": 11, "ago": 0, "set": 7, "out": 2, "nov": 2, "dez": 5}}
+                ]
+            }
+        };
+
+        function init() {
+            carregarKPIs();
+            renderizarTop3();
+            preencherFiltro();
+            renderizarGraficos();
+            renderizarUnidades();
+        }
+
+        function carregarKPIs() {
+            let totalVendas = 0;
+            let totalOperadores = 0;
+
+            for (let unit in DADOS) {
+                totalVendas += DADOS[unit].total;
+                if (DADOS[unit].operadores) {
+                    totalOperadores += DADOS[unit].operadores.length;
+                }
+            }
+
+            const taxaAtivacao = ((totalVendas / (totalOperadores * 10)) * 100).toFixed(1);
+
+            document.getElementById('kpiTotal').textContent = totalVendas;
+            document.getElementById('kpiUnidades').textContent = Object.keys(DADOS).length;
+            document.getElementById('kpiOperadores').textContent = totalOperadores;
+            //document.getElementById('kpiTaxa').textContent = taxaAtivacao + '%'; (NÃO APARECER)
+        }
+
+        function renderizarTop3() {
+            const unidades = Object.entries(DADOS)
+                .map(([nome, dados]) => ({ nome, total: dados.total }))
+                .sort((a, b) => b.total - a.total)
+                .slice(0, 3);
+
+            const classes = ['rank1', 'rank2', 'rank3'];
+            const labels = ['1º Lugar', '2º Lugar', '3º Lugar'];
+
+            const html = unidades.map((u, i) => `
+                <div class="top3-card ${classes[i]}">
+                    <div class="rank-number">${i + 1}</div>
+                    <div class="rank-content">
+                        <div class="rank-badge">${labels[i]}</div>
+                        <div class="rank-name">${u.nome}</div>
+                        <div class="rank-unit">Cartões Ativados</div>
+                        <div class="rank-stat">${u.total}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('top3Container').innerHTML = html;
+        }
+
+        function preencherFiltro() {
+            const select = document.getElementById('filterSelect');
+            Object.keys(DADOS).sort().forEach(unit => {
+                const option = document.createElement('option');
+                option.value = unit;
+                option.textContent = unit;
+                select.appendChild(option);
+            });
+        }
+
+        function renderizarGraficos() {
+            const vendasMes = {};
+            MESES.forEach(m => vendasMes[m] = 0);
+
+            for (let unit in DADOS) {
+                for (let mes in DADOS[unit].vendas) {
+                    vendasMes[mes] += DADOS[unit].vendas[mes];
+                }
+            }
+
+            // Gráfico de linhas
+            const ctx1 = document.getElementById('chartMeses');
+            if (ctx1) {
+                new Chart(ctx1, {
+                    type: 'line',
+                    data: {
+                        labels: MESES_LABELS,
+                        datasets: [{
+                            label: 'Vendas Mensais',
+                            data: MESES.map(m => vendasMes[m]),
+                            borderColor: '#1b5e7f',
+                            backgroundColor: 'rgba(27, 94, 127, 0.05)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#1b5e7f',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { display: true, labels: { boxWidth: 15, usePointStyle: true } }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { stepSize: 20 } }
+                        }
+                    }
+                });
+            }
+
+            // Gráfico de barras
+            const unidadesTop = Object.entries(DADOS)
+                .map(([nome, dados]) => ({ nome, total: dados.total }))
+                .sort((a, b) => b.total - a.total)
+                .slice(0, 10);
+
+            const ctx2 = document.getElementById('chartTop10');
+            if (ctx2) {
+                new Chart(ctx2, {
+                    type: 'bar',
+                    data: {
+                        labels: unidadesTop.map(u => u.nome),
+                        datasets: [{
+                            label: 'Cartões',
+                            data: unidadesTop.map(u => u.total),
+                            backgroundColor: '#1b5e7f',
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        indexAxis: 'y',
+                        plugins: { legend: { display: false } },
+                        scales: { x: { beginAtZero: true } }
+                    }
+                });
+            }
+        }
+
+        function renderizarUnidades() {
+            const filtro = document.getElementById('filterSelect').value;
+            const container = document.getElementById('unitsContainer');
+            container.innerHTML = '';
+
+            Object.keys(DADOS).sort().forEach(unitName => {
+                if (filtro && unitName !== filtro) return;
+
+                const unit = DADOS[unitName];
+                const operadores = unit.operadores || [];
+
+                let html = `
+                    <div class="unit-card">
+                        <div class="unit-header">
+                            <div class="unit-name">${unitName}</div>
+                            <div class="unit-total">${unit.total} cartões</div>
+                        </div>
+                        <table class="unit-table">
+                            <thead>
+                                <tr>
+                                    <th>Operador</th>
+                                    ${MESES_LABELS.map(m => `<th>${m}</th>`).join('')}
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                operadores.forEach(op => {
+                    html += `<tr>
+                        <td class="operator-name">${op.nome}</td>
+                        ${MESES.map(mes => {
+                            const val = op.vendas[mes] || 0;
+                            const classAtivo = val > 0 ? 'active' : '';
+                            return `<td class="month-cell ${classAtivo}">${val || '−'}</td>`;
+                        }).join('')}
+                        <td class="total-cell">${op.total}</td>
+                    </tr>`;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                container.innerHTML += html;
+            });
+        }
+
+        function aplicarFiltro() {
+            renderizarUnidades();
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
